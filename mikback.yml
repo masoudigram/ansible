@@ -1,8 +1,6 @@
 ---
 - name: Backup Mikrotik
   hosts: mikrotik
-  become: yes
-  become_user: root
   gather_facts: false
   vars:
     github_token: "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"
