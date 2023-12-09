@@ -1,8 +1,13 @@
 ---
 - name: Backup Mikrotik
   hosts: mikrotik
+  become: yes
+  become_user: root
   gather_facts: false
   vars:
+    github_token: "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"
+    owner: "masoudigram"
+    repo: "ansible"
     backup_dir: "/home/msd"
   tasks:
     - name: Export
@@ -11,9 +16,15 @@
       register: export
       delegate_to: localhost
 
-    - name: Backup
-      ansible.builtin.copy:
-        content: "{{ export.stdout }}"
-        dest: "{{ backup_dir }}/{{ inventory_hostname }}_config.{{ lookup('pipe', 'date +%Y-%m-%d@%H:%M:%S') }}"
+    - name: Save Export to GitHub
+      uri:
+        url: "https://api.github.com/repos/{{ owner }}/{{ repo }}/contents/{{ inventory_hostname }}_config/{{ lookup('pipe', 'date +%Y-%m-%d@%H:%M:%S') }}"
+        method: PUT
+        headers:
+          Authorization: "token {{ github_token }}"
+        body_format: json
+        body:
+          message: "Backup {{ inventory_hostname }} configuration"
+          content: "{{ export.stdout | b64encode }}"
       when: export is defined
       delegate_to: localhost
