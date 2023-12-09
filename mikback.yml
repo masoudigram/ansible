@@ -5,7 +5,7 @@
   become_user: root
   gather_facts: false
   vars:
-    backup_dir: "/root/backmik"
+    backup_dir: "/home/msd"
   tasks:
     - name: Export
       ansible.builtin.shell: >-
