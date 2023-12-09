@@ -1,6 +1,7 @@
 ---
 - name: Backup Mikrotik
   hosts: mikrotik
+  become: yes
   gather_facts: false
   vars:
     backup_dir: "/root/backmik"
