@@ -1,4 +1,8 @@
 ---
+- name: Check current user
+  command: whoami
+  register: current_user
+  delegate_to: localhost
 - name: Backup Mikrotik
   hosts: mikrotik
   become: yes
