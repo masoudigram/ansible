@@ -5,7 +5,7 @@
   become_user: root
   gather_facts: false
   vars:
-    backup_dir: "/home/msd"
+    backup_dir: "/snap/semaphore/260"
   tasks:
     - name: Export
       ansible.builtin.shell: >-
