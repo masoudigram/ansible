@@ -1,12 +1,4 @@
 ---
-- name: Ensure backup directory has correct permissions
-  file:
-    path: "/home/msd"
-    state: directory
-    mode: '0755'
-    owner: root
-  delegate_to: localhost
-
 - name: Backup Mikrotik
   hosts: mikrotik
   become: yes
