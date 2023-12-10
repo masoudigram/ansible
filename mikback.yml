@@ -3,6 +3,7 @@
   hosts: mikrotik
   gather_facts: false
   vars:
+    ansible_ssh_extra_args: '-o HostKeyAlgorithms=ssh-rsa'
     github_token: "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"
     owner: "masoudigram"
     repo: "ansible"
