@@ -1,34 +1,31 @@
 ---
-- name: Backup MikroTik Router Config and Push to GitHub
-  hosts: 192.168.10.176
-  gather_facts: no
-
+- name: Backup Mikrotik and Push to GitHub
+  hosts: mikrotik
+  gather_facts: false
+  vars:
+    ansible_ssh_extra_args: '-o HostKeyAlgorithms=ssh-rsa'
+    github_token: "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"
+    owner: "masoudigram"
+    repo: "ansible"
+    backup_dir: "/home/msd"
   tasks:
-    - name: Fetch MikroTik Backup
-      fetch:
-        src: "/flash/{{ inventory_hostname }}-{{ ansible_date_time.date }}.backup"
-        dest: "/home/msd/backups"
-        flat: yes
-        fail_on_missing: no
+    - name: Export
+      ansible.builtin.shell: >-
+        sshpass -p '{{ ansible_password }}' ssh -o StrictHostKeyChecking=no -o HostKeyAlgorithms=ssh-rsa  {{ ansible_user }}@{{ inventory_hostname }} /export
+      register: export
 
-    - name: Check if Backup Exists
-      stat:
-        path: "/home/msd/backups/{{ inventory_hostname }}-{{ ansible_date_time.date }}.backup"
-      register: backup_file
-
-    - name: Upload Backup to GitHub
-      when: backup_file.stat.exists == True
+    - name: Upload Export to GitHub
       uri:
-        url: https://api.github.com/repos/masoudigram/ansible/contents/backups/{{ inventory_hostname }}-{{ ansible_date_time.date }}.backup
+        url: https://api.github.com/repos/{{ owner }}/{{ repo }}/contents/export_{{ ansible_date_time.date }}.txt
         method: PUT
         headers:
-          Authorization: "token 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"
+          Authorization: "token {{ github_token }}"
           Content-Type: "application/json"
         body_format: json
         body: |
           {
-            "message": "Adding MikroTik backup",
-            "content": "{{ lookup('file', '/home/msd/backups/' + inventory_hostname + '-' + ansible_date_time.date + '.backup') | b64encode }}"
+            "message": "Adding MikroTik export",
+            "content": "{{ export.stdout | b64encode }}"
           }
       register: github_upload
 
