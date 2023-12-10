@@ -4,7 +4,7 @@
   gather_facts: false
   vars:
     ansible_ssh_extra_args: '-o HostKeyAlgorithms=ssh-rsa'
-    github_token: "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"
+    github_token: "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"
     owner: "masoudigram"
     repo: "ansible"
     backup_dir: "/home/msd"
