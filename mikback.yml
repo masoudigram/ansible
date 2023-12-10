@@ -1,37 +1,26 @@
 ---
-- name: Backup Mikrotik
-  hosts: mikrotik
-  gather_facts: false
-  vars:
-    ansible_ssh_extra_args: '-o HostKeyAlgorithms=ssh-rsa'
-    github_token: "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"
-    owner: "masoudigram"
-    repo: "ansible"
-    backup_dir: "/home/msd"
-  tasks:
-    - name: Export
-      ansible.builtin.shell: >-
-        sshpass -p '{{ ansible_password }}' ssh -o StrictHostKeyChecking=no -o HostKeyAlgorithms=ssh-rsa  {{ ansible_user }}@{{ inventory_hostname }} /export
-      register: export
-      delegate_to: localhost
+- name: Backup MikroTik Router Config and Push to GitHub
+  hosts: 192.168.10.176  # assuming this is the IP address of your MikroTik router
+  gather_facts: no
 
-    - name: Save Export to GitHub
-      vars:
-        github_url: "https://api.github.com/repos/{{ owner }}/{{ repo }}/contents/{{ inventory_hostname }}_config/{{ lookup('pipe', 'date +%Y-%m-%d@%H:%M:%S') }}"
-      uri:
-        url: "{{ github_url }}"
-        method: PUT
-        headers:
-          Authorization: "token {{ github_token }}"
-        body_format: json
-        body:
-          message: "Backup {{ inventory_hostname }} configuration"
-          content: "{{ export.stdout | b64encode }}"
-      register: github_response
-      when: export is defined
-      delegate_to: localhost
-    
-    - name: Check for successful push
-      debug:
-        msg: "Push successful: {{ github_response.status == 201 }}"
-      when: github_response.status == 201
+  tasks:
+    - name: Fetch MikroTik Backup
+      fetch:
+        src: "/flash/{{ ansible_hostname }}-{{ ansible_date_time.date }}.backup"
+        dest: "/home/msd/backups"
+        flat: yes
+        fail_on_missing: no
+
+    - name: Check if Backup Exists
+      stat:
+        path: "/home/msd/backups/{{ ansible_hostname }}-{{ ansible_date_time.date }}.backup"
+      register: backup_file
+
+    - name: Commit Backup to GitHub
+      when: backup_file.stat.exists == True
+      github_repo:
+        user: masoudigram
+        token: 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
+        repo: ansible  # Replace 'your_repo_name' with the name of your GitHub repository
+        dest: "backups/{{ ansible_hostname }}-{{ ansible_date_time.date }}.backup"
+        src: "/home/msd/backups/{{ ansible_hostname }}-{{ ansible_date_time.date }}.backup"
