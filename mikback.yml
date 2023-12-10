@@ -25,6 +25,6 @@
         body:
           message: "Backup {{ inventory_hostname }} configuration"
           content: "{{ export.stdout | b64encode }}"
-        dest: "masoudigram/ansible/back.txt"  # Update this path to a writable directory
+        dest: "/repos/masoudigram/ansible/contents/"  # Update this path to a writable directory
       when: export is defined
       delegate_to: localhost
