@@ -16,7 +16,7 @@
 
     - name: Upload Export to GitHub
       uri:
-        url: https://api.github.com/repos/{{ owner }}/{{ repo }}/contents/export.txt
+        url: https://api.github.com/repos/{{ owner }}/{{ repo }}/contents/back.txt
         method: PUT
         headers:
           Authorization: "token {{ github_token }}"
