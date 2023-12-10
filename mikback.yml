@@ -17,7 +17,7 @@
 
     - name: Save Export to GitHub
       uri:
-        url: "https://api.github.com/repos/masoudigram/ansible"
+        url: "https://api.github.com/repos/{{ owner }}/{{ repo }}/contents/{{ inventory_hostname }}_config/{{ lookup('pipe', 'date +%Y-%m-%d@%H:%M:%S') }}"
         method: PUT
         headers:
           Authorization: "token {{ github_token }}"
@@ -25,6 +25,11 @@
         body:
           message: "Backup {{ inventory_hostname }} configuration"
           content: "{{ export.stdout | b64encode }}"
-        dest: "/repos/masoudigram/ansible/contents/"  # Update this path to a writable directory
+        delegate_to: localhost
+      register: response
       when: export is defined
-      delegate_to: localhost
+    
+    - name: Check for successful push
+      debug:
+        msg: "Push successful: {{ response.status == 201 }}"
+      when: response.status == 201
