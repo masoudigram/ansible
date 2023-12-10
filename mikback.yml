@@ -19,7 +19,7 @@
     - name: Upload Backup to GitHub
       when: backup_file.stat.exists == True
       uri:
-        url: https://api.github.com/repos/masoudigram/your_repo_name/contents/backups/{{ ansible_hostname }}-{{ ansible_date_time.date }}.backup
+        url: https://api.github.com/repos/masoudigram/ansible/contents/backups/{{ ansible_hostname }}-{{ ansible_date_time.date }}.backup
         method: PUT
         headers:
           Authorization: "token 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"
