@@ -1,25 +1,25 @@
 ---
 - name: Backup MikroTik Router Config and Push to GitHub
-  hosts: 192.168.10.176
+  hosts: mikrotik_router
   gather_facts: no
 
   tasks:
     - name: Fetch MikroTik Backup
       fetch:
-        src: "/flash/{{ ansible_hostname }}-{{ ansible_date_time.date }}.backup"
+        src: "/flash/{{ inventory_hostname }}-{{ ansible_date_time.date }}.backup"
         dest: "/home/msd/backups"
         flat: yes
         fail_on_missing: no
 
     - name: Check if Backup Exists
       stat:
-        path: "/home/msd/backups/{{ ansible_hostname }}-{{ ansible_date_time.date }}.backup"
+        path: "/home/msd/backups/{{ inventory_hostname }}-{{ ansible_date_time.date }}.backup"
       register: backup_file
 
     - name: Upload Backup to GitHub
       when: backup_file.stat.exists == True
       uri:
-        url: https://api.github.com/repos/masoudigram/ansible/contents/backups/{{ ansible_hostname }}-{{ ansible_date_time.date }}.backup
+        url: https://api.github.com/repos/masoudigram/ansible/contents/backups/{{ inventory_hostname }}-{{ ansible_date_time.date }}.backup
         method: PUT
         headers:
           Authorization: "token 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"
@@ -28,7 +28,7 @@
         body: |
           {
             "message": "Adding MikroTik backup",
-            "content": "{{ lookup('file', '/home/msd/backups/' + ansible_hostname + '-' + ansible_date_time.date + '.backup') | b64encode }}"
+            "content": "{{ lookup('file', '/home/msd/backups/' + inventory_hostname + '-' + ansible_date_time.date + '.backup') | b64encode }}"
           }
       register: github_upload
 
