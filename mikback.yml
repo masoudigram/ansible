@@ -11,7 +11,7 @@
   tasks:
     - name: Export
       ansible.builtin.shell: >-
-        sshpass -p '{{ ansible_password }}' ssh -o StrictHostKeyChecking=no {{ ansible_user }}@{{ inventory_hostname }} /export
+        sshpass -p '{{ ansible_password }}' ssh -o StrictHostKeyChecking=no -o HostKeyAlgorithms=ssh-rsa  {{ ansible_user }}@{{ inventory_hostname }} /export
       register: export
       delegate_to: localhost
 
