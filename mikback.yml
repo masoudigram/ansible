@@ -1,6 +1,6 @@
 ---
 - name: Backup Mikrotik and Push to GitHub
-  hosts: mikrotik
+  hosts: 192.168.10.176
   gather_facts: false
   vars:
     ansible_ssh_extra_args: '-o HostKeyAlgorithms=ssh-rsa'
