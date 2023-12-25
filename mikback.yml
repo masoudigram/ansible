@@ -27,30 +27,6 @@
         register: export
         delegate_to: localhost
 
-      - name: store export to local file
-        ansible.builtin.copy:
-          content: "{{ export.stdout }}"
-          dest: "/var/lib/awx/projects/output/{{ inventory_hostname }}.config"
-        when: export is defined
-        delegate_to: localhost
-
-    - name: Run backup withot password (when password is not defined)
-      when: ansible_ssh_pass is not defined
-      block:
-
-      - name: gather export (with passwordless authentication)
-        # shell with delegate_to: localhost works better that ansible.builtin.raw  
-        ansible.builtin.shell: >-
-          ssh {{ ansible_user }}@{{ inventory_hostname }} /export
-        register: export
-        delegate_to: localhost
-
-      - name: store export to local file
-        ansible.builtin.copy:
-          content: "{{ export.stdout }}"
-          dest: "/var/lib/awx/projects/output/{{ inventory_hostname }}.config"
-        when: export is defined
-        delegate_to: localhost
 
       - name: store export to local file
         ansible.builtin.shell: echo "{{ export.stdout }}" | grep -oP 'system identity\n\s+set name=\K\w+'
@@ -59,10 +35,29 @@
         failed_when: false
         ignore_errors: true
         delegate_to: localhost
+      
+      - name: extract identity from output
+        set_fact:
+          device_identity: "{{ identity_output.stdout_lines | first | regex_replace('.*identity: (\\S+).*', '\\1') }}"
+        when: identity_output is succeeded
 
-      - name: store export with identity as filename
+      - name: store export to local file
         ansible.builtin.copy:
           content: "{{ export.stdout }}"
-          dest: "/var/lib/awx/projects/output/{{ identity_output.stdout | default('unknown_identity') }}.config"
-        when: identity_output is succeeded
+          dest: "/var/lib/awx/projects/output/{{ identity_output.stdout }}.config"
+        when: export is defined
         delegate_to: localhost
+        
+      # - name: gather export (with passwordless authentication)
+      #   # shell with delegate_to: localhost works better that ansible.builtin.raw  
+      #   ansible.builtin.shell: >-
+      #     ssh {{ ansible_user }}@{{ inventory_hostname }} /export
+      #   register: export
+      #   delegate_to: localhost
+
+      # - name: store export to local file
+      #   ansible.builtin.copy:
+      #     content: "{{ export.stdout }}"
+      #     dest: "output/{{ device_identity }}.config"
+      #   when: export is defined
+      #   delegate_to: localhost
