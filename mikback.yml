@@ -44,7 +44,7 @@
       - name: store export to local file
         ansible.builtin.copy:
           content: "{{ export.stdout }}"
-          dest: "/var/lib/awx/projects/output/{{ identity_output.stdout }}.config"
+          dest: "/var/lib/awx/projects/output/{{ device_identity }}.config"
         when: export is defined
         delegate_to: localhost
         
