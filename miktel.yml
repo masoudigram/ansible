@@ -4,17 +4,17 @@
     - name: Run backup with password (when password is defined)
       when: ansible_ssh_pass is defined
       block:
-      - name: gather export (with password authentication using telnet)
-        ansible.builtin.expect:
-          command: telnet {{ inventory_hostname }}
-          responses:
-          Password: "{{ ansible_ssh_pass }}"
-          "/export": - export
-          "#": exit  # Change the prompt accordingly
-        register: telnet_output
+        - name: gather export (with password authentication using telnet)
+          ansible.builtin.expect:
+            command: telnet {{ inventory_hostname }}
+            responses:
+              Password: "{{ ansible_ssh_pass }}"
+              "/export": "export"
+              "#": "exit"  # Change the prompt accordingly
+          register: telnet_output
 
-      - name: store export to local file with identity as filename
-        ansible.builtin.copy:
-          content: "{{ telnet_output.stdout }}"
-          dest: "/var/lib/awx/projects/output/{{ (telnet_output.stdout | regex_search('/system identity\\r\\nset name=(\\w+)', '\\1') | default('unknown_identity')) | replace('\\[', '') | replace('\\]', '') }}.config"
-        delegate_to: localhost
+        - name: store export to local file with identity as filename
+          ansible.builtin.copy:
+            content: "{{ telnet_output.stdout }}"
+            dest: "/var/lib/awx/projects/output/{{ (telnet_output.stdout | regex_search('/system identity\\r\\nset name=(\\w+)', '\\1') | default('unknown_identity')) | replace('\\[', '') | replace('\\]', '') }}.config"
+          delegate_to: localhost
