@@ -8,7 +8,7 @@
           ansible.builtin.expect:
             command: telnet {{ inventory_hostname }}
             responses:
-              Login: {{ ansible_user }}
+              Login: "{{ ansible_user }}"
               Password: "{{ ansible_ssh_pass }}"
               "/export": "export"
               "#": "exit"  # Change the prompt accordingly
