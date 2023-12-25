@@ -1,16 +1,20 @@
 ---
-- name: Run export command on MikroTik device via telnet
+- name: Run export command on MikroTik device via Telnet
   hosts: mikrotik
   gather_facts: no
   vars:
-    ansible_user: admin
-    ansible_password: admin
-    ansible_connection: telnet
+    ansible_connection: local
+    ansible_python_interpreter: /usr/bin/python3
 
   tasks:
-    - name: Run export command
-      raw: export
-      register: output
+    - name: Telnet to MikroTik device and run export command
+      expect:
+        command: telnet {{ inventory_hostname }}
+        responses:
+          login: "admin"
+          Password: "password"
+          "/[>#] $/": "export"
+      register: telnet_output
 
     - debug:
-        var: output.stdout
+        var: telnet_output.stdout_lines
