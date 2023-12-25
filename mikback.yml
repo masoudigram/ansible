@@ -6,34 +6,13 @@
     - name: Run backup with password (when password is defined)
       when: ansible_ssh_pass is defined
       block:
-
-      - name: Ensure that sshpass is installed
-        ansible.builtin.shell: whereis sshpass | awk '{print $2}'
-        run_once: yes
-        register: sshpass
-        delegate_to: localhost
-
-      - ansible.builtin.fail:
-          msg: >-
-            Playbook requrie sshpass to use password authenication, please install
-            sshpass and re-run same playbook again. 
-            You can found details in https://www.redhat.com/sysadmin/ssh-automation-sshpass
-        when: sshpass.stdout|length == 0
-
+      
       - name: gather export (with password authentication)
-        # shell with delegate_to: localhost works better that ansible.builtin.raw  
         ansible.builtin.shell: >-
             sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} /export
         register: export
         delegate_to: localhost
-
-      # - name: store export to local file
-      #   ansible.builtin.copy:
-      #     content: "{{ export.stdout }}"
-      #     dest: "/var/lib/awx/projects/output/{{ inventory_hostname }}.config"
-      #   when: export is defined
-      #   delegate_to: localhost
-        
+  
       - name: store export to local file with identity as filename
         ansible.builtin.copy:
           content: "{{ export.stdout }}"
