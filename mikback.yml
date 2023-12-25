@@ -15,53 +15,39 @@
 
       - ansible.builtin.fail:
           msg: >-
-            Playbook requires sshpass to use password authentication, please install
-            sshpass and re-run the playbook again. 
-            You can find details at https://www.redhat.com/sysadmin/ssh-automation-sshpass
+            Playbook requrie sshpass to use password authenication, please install
+            sshpass and re-run same playbook again. 
+            You can found details in https://www.redhat.com/sysadmin/ssh-automation-sshpass
         when: sshpass.stdout|length == 0
 
       - name: gather export (with password authentication)
+        # shell with delegate_to: localhost works better that ansible.builtin.raw  
         ansible.builtin.shell: >-
           sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no {{ ansible_user }}@{{ inventory_hostname }} /export
         register: export
         delegate_to: localhost
 
       - name: store export to local file
-        ansible.builtin.shell: echo "{{ export.stdout }}" | grep -oP 'system identity\n\s+set name=\K\w+'
-        register: identity_output
-        changed_when: false
-        failed_when: false
-        ignore_errors: true
-        delegate_to: localhost
-
-      - name: store export with identity as filename
         ansible.builtin.copy:
           content: "{{ export.stdout }}"
-          dest: "/var/lib/awx/projects/output/{{ identity_output.stdout | default('unknown_identity') }}.config"
-        when: identity_output is succeeded
+          dest: "/var/lib/awx/projects/output/{{ inventory_hostname }}.config"
+        when: export is defined
         delegate_to: localhost
 
-      - name: Run backup without password (when password is not defined)
-        when: ansible_ssh_pass is not defined
-        block:
+    - name: Run backup withot password (when password is not defined)
+      when: ansible_ssh_pass is not defined
+      block:
 
       - name: gather export (with passwordless authentication)
+        # shell with delegate_to: localhost works better that ansible.builtin.raw  
         ansible.builtin.shell: >-
           ssh {{ ansible_user }}@{{ inventory_hostname }} /export
         register: export
         delegate_to: localhost
 
       - name: store export to local file
-        ansible.builtin.shell: echo "{{ export.stdout }}" | grep -oP 'system identity\n\s+set name=\K\w+'
-        register: identity_output
-        changed_when: false
-        failed_when: false
-        ignore_errors: true
-        delegate_to: localhost
-
-      - name: store export with identity as filename
         ansible.builtin.copy:
           content: "{{ export.stdout }}"
-          dest: "output/{{ identity_output.stdout | default('unknown_identity') }}.config"
-        when: identity_output is succeeded
+          dest: "output/{{ inventory_hostname }}.config"
+        when: export is defined
         delegate_to: localhost
