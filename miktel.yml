@@ -1,0 +1,33 @@
+- hosts: mikrotik
+  gather_facts: no
+  tasks:
+    - name: Run backup with password (when password is defined)
+      when: ansible_ssh_pass is defined
+      block:
+        - name: Ensure that telnet is installed
+          ansible.builtin.shell: telnet --version
+          run_once: yes
+          register: telnet_check
+          delegate_to: localhost
+          ignore_errors: true  # Telnet might not be installed on every system
+
+        - ansible.builtin.fail:
+            msg: >-
+              Playbook requires telnet for communication. Please install telnet and re-run the playbook.
+            when: telnet_check.rc != 0
+
+        - name: gather export (with password authentication using telnet)
+          ansible.builtin.expect:
+            command: telnet {{ inventory_hostname }}
+            responses:
+              Password: "{{ ansible_ssh_pass }}"
+              "/export":  # Add your telnet commands here
+                - export
+              "#": exit  # Change the prompt accordingly
+          register: telnet_output
+
+        - name: store export to local file with identity as filename
+          ansible.builtin.copy:
+            content: "{{ telnet_output.stdout }}"
+            dest: "/var/lib/awx/projects/output/{{ (telnet_output.stdout | regex_search('/system identity\\r\\nset name=(\\w+)', '\\1') | default('unknown_identity')) | replace('\\[', '') | replace('\\]', '') }}.config"
+          delegate_to: localhost
