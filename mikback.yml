@@ -27,37 +27,16 @@
         register: export
         delegate_to: localhost
 
-
-      - name: store export to local file
-        ansible.builtin.shell: echo "{{ export.stdout }}" | grep -oP 'system identity\n\s+set name=\K\w+'
-        register: identity_output
-        changed_when: false
-        failed_when: false
-        ignore_errors: true
-        delegate_to: localhost
-      
-      - name: extract identity from output
-        set_fact:
-          device_identity: "{{ identity_output.stdout_lines | first | regex_replace('.*identity: (\\S+).*', '\\1') }}"
-        when: identity_output is succeeded
-
-      - name: store export to local file
-        ansible.builtin.copy:
-          content: "{{ export.stdout }}"
-          dest: "/var/lib/awx/projects/output/{{ device_identity }}.config"
-        when: export is defined
-        delegate_to: localhost
-        
-      # - name: gather export (with passwordless authentication)
-      #   # shell with delegate_to: localhost works better that ansible.builtin.raw  
-      #   ansible.builtin.shell: >-
-      #     ssh {{ ansible_user }}@{{ inventory_hostname }} /export
-      #   register: export
-      #   delegate_to: localhost
-
       # - name: store export to local file
       #   ansible.builtin.copy:
       #     content: "{{ export.stdout }}"
-      #     dest: "output/{{ device_identity }}.config"
+      #     dest: "/var/lib/awx/projects/output/{{ inventory_hostname }}.config"
       #   when: export is defined
       #   delegate_to: localhost
+        
+      - name: store export to local file with identity as filename
+        ansible.builtin.copy:
+          content: "{{ export.stdout }}"
+          dest: "/var/lib/awx/projects/output/{{ export.stdout | regex_search('\/system identity\\r\\nset name=(\\w+)', '\\1') | default('unknown_identity') }}.config"
+        when: export is defined
+        delegate_to: localhost
