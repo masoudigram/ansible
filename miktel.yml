@@ -1,21 +1,16 @@
-- hosts: mikrotik
+---
+- name: Run export command on MikroTik device via telnet
+  hosts: your_mikrotik_host
   gather_facts: no
-  tasks:
-    - name: Run backup with password (when password is defined)
-      when: ansible_ssh_pass is defined
-      block:
-        - name: gather export (with password authentication using telnet)
-          ansible.builtin.expect:
-            command: telnet {{ inventory_hostname }}
-            responses:
-              Login: "{{ ansible_user }}"
-              Password: "{{ ansible_ssh_pass }}"
-              "/export": "export"
-              "#": "exit"  # Change the prompt accordingly
-          register: telnet_output
+  vars:
+    ansible_user: admin
+    ansible_password: admin
+    ansible_connection: telnet
 
-        - name: store export to local file with identity as filename
-          ansible.builtin.copy:
-            content: "{{ telnet_output.stdout }}"
-            dest: "/var/lib/awx/projects/output/{{ (telnet_output.stdout | regex_search('/system identity\\r\\nset name=(\\w+)', '\\1') | default('unknown_identity')) | replace('\\[', '') | replace('\\]', '') }}.config"
-          delegate_to: localhost
+  tasks:
+    - name: Run export command
+      raw: export
+      register: output
+
+    - debug:
+        var: output.stdout
