@@ -1,6 +1,6 @@
 ---
 - name: Run export command on MikroTik device via telnet
-  hosts: your_mikrotik_host
+  hosts: mikrotik
   gather_facts: no
   vars:
     ansible_user: admin
