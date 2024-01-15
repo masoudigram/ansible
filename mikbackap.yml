@@ -16,5 +16,5 @@
       - name: store export to local file with identity as filename
         ansible.builtin.copy:
           content: "{{ export.stdout }}"
-          dest: "/var/lib/awx/projects/output/{{ inventory_hostname }}.config"
+          dest: "/var/lib/awx/projects/output/ap/{{ inventory_hostname }}.config"
         delegate_to: localhost
