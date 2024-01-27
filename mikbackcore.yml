@@ -5,7 +5,7 @@
       block:
         - name: gather export (with password authentication)
           ansible.builtin.shell: >-
-              ssh -o StrictHostKeyChecking=no '{{ ansible_ssh_pass }}' -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} /export
+            sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} /export compact
           register: export compact
           delegate_to: localhost
 
