@@ -1,20 +1,16 @@
----
 - hosts: mikrotik
   gather_facts: no
   tasks:
-
     - name: Run backup with password (when password is defined)
-      when: ansible_ssh_pass is defined
       block:
-      
-      - name: gather export (with password authentication)
-        ansible.builtin.shell: >-
-            sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} /export
-        register: export compact
-        delegate_to: localhost
-  
-      - name: store export to local file with identity as filename
-        ansible.builtin.copy:
-          content: "{{ export.stdout }}"
-          dest: "/var/lib/awx/projects/output/core/{{ inventory_hostname }}.config"
-        delegate_to: localhost
+        - name: gather export (with password authentication)
+          ansible.builtin.shell: >-
+              ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} /export
+          register: export compact
+          delegate_to: localhost
+
+        - name: store export to local file with identity as filename
+          ansible.builtin.copy:
+            content: "{{ export.stdout }}"
+            dest: "/var/lib/awx/projects/output/core/{{ inventory_hostname }}.config"
+          delegate_to: localhost
