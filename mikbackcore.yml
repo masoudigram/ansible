@@ -4,7 +4,6 @@
   tasks:
 
     - name: Run backup with password (when password is defined)
-      when: tower_ssh_pass is defined
       block:
       
       - name: gather export (with password authentication)
