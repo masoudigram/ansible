@@ -10,7 +10,7 @@
       - name: gather export (with password authentication)
         ansible.builtin.shell: >-
             sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} /export
-        register: export
+        register: export compact
         delegate_to: localhost
   
       - name: store export to local file with identity as filename
