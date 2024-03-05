@@ -1,5 +1,5 @@
 - hosts: mikrotik
-  gather_facts: no
+  gather_facts: yes
   tasks:
     - name: Run BackUp
       block:
