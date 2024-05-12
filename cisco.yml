@@ -1,4 +1,4 @@
-- hosts: mikrotik
+- hosts: cisco
   gather_facts: no
   tasks:
     - name: Run BackUp
