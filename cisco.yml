@@ -13,5 +13,5 @@
         - name: store export to local file
           ansible.builtin.copy:
             content: "{{ export.stdout }}"
-            dest: "/var/lib/awx/projects/output/core/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.config"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.config"
           delegate_to: localhost
