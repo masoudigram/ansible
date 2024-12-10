@@ -1,0 +1,18 @@
+- hosts: mikrotik
+  gather_facts: no
+  tasks:
+    - name: Run BackUp
+      block:
+        - name: gather export
+          no_log: true
+          ansible.builtin.shell: >-
+            sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} /ip firewall address-list add address=172.16.99.0/24 lis
+t=Admin
+          register: export
+          delegate_to: localhost
+
+        # - name: store export to local file
+        #   ansible.builtin.copy:
+        #     content: "{{ export.stdout }}"
+        #     dest: "/var/lib/awx/projects/output/st/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.config"
+        #   delegate_to: localhost
