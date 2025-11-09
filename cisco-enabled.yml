@@ -6,7 +6,20 @@
         - name: gather export
           no_log: false
           ansible.builtin.shell: >- 
-            sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} "echo -e 'enable\n{{ ansible_enable_password }}\nshow run'"
+            sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} 'expect -c "
+              spawn telnet {{ inventory_hostname }}
+              expect \"Username:\"
+              send \"{{ ansible_user }}\r\"
+              expect \"Password:\"
+              send \"{{ ansible_ssh_pass }}\r\"
+              expect \"*>\"
+              send \"enable\r\"
+              expect \"Password:\"
+              send \"{{ ansible_enable_password }}\r\"
+              expect \"*#\"
+              send \"show run\r\"
+              expect \"*#\"
+              exit"'
           register: export
           delegate_to: localhost
 
