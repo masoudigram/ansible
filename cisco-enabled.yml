@@ -1,10 +1,10 @@
 - hosts: ciscoen
-  gather_facts: no
+  gather_facts: yes
   tasks:
     - name: Run BackUp
       block:
         - name: gather export
-          no_log: true
+          no_log: false
           ansible.builtin.shell: >- 
             sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} "echo -e 'enable\n{{ ansible_enable_password }}\nshow run'"
           register: export
