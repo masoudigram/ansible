@@ -8,7 +8,7 @@
           ansible.builtin.shell: >- 
             sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} 'expect -c "
               spawn telnet {{ inventory_hostname }}
-              expect \"Username:\"
+              expect \"login as:\"
               send \"{{ ansible_user }}\r\"
               expect \"Password:\"
               send \"{{ ansible_ssh_pass }}\r\"
