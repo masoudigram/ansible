@@ -1,0 +1,17 @@
+- hosts: ciscoen
+  gather_facts: no
+  tasks:
+    - name: Run BackUp
+      block:
+        - name: gather export
+          no_log: true
+          ansible.builtin.shell: >- 
+            sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} 'show run'
+          register: export
+          delegate_to: localhost
+
+        - name: store export to local file
+          ansible.builtin.copy:
+            content: "{{ export.stdout }}"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.config"
+          delegate_to: localhost
