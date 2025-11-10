@@ -1,0 +1,62 @@
+---
+- name: Universal Cisco Backup Playbook (IOS / IOS XE / IOS XR / NX-OS)
+  hosts: jsc
+  gather_facts: no
+  connection: ansible.netcommon.network_cli
+
+  tasks:
+
+    - name: Ensure backup directory exists
+      ansible.builtin.file:
+        path: /var/lib/awx/projects/output/cisco/
+        state: directory
+      delegate_to: localhost
+
+    - name: Detect platform type
+      debug:
+        msg: "Backing up {{ inventory_hostname }} (OS: {{ ansible_network_os }})"
+
+    # ========== IOS / IOS XE ==========
+    - name: Backup IOS / IOS XE config
+      when: ansible_network_os == "cisco.ios.ios"
+      block:
+        - name: Gather running-config
+          cisco.ios.ios_command:
+            commands: show running-config
+          register: ios_out
+
+        - name: Save IOS config
+          ansible.builtin.copy:
+            content: "{{ ios_out.stdout[0] }}"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_ios.cfg"
+          delegate_to: localhost
+
+    # ========== IOS XR ==========
+    - name: Backup IOS XR config
+      when: ansible_network_os == "cisco.iosxr.iosxr"
+      block:
+        - name: Gather running-config
+          cisco.iosxr.iosxr_command:
+            commands: show running-config
+          register: xr_out
+
+        - name: Save IOS XR config
+          ansible.builtin.copy:
+            content: "{{ xr_out.stdout[0] }}"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_iosxr.cfg"
+          delegate_to: localhost
+
+    # ========== NX-OS ==========
+    - name: Backup NX-OS config
+      when: ansible_network_os == "cisco.nxos.nxos"
+      block:
+        - name: Gather running-config
+          cisco.nxos.nxos_command:
+            commands: show running-config
+          register: nx_out
+
+        - name: Save NX-OS config
+          ansible.builtin.copy:
+            content: "{{ nx_out.stdout[0] }}"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_nxos.cfg"
+          delegate_to: localhost
