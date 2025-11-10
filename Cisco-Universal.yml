@@ -1,6 +1,6 @@
 ---
 - name: Universal Cisco Backup Playbook
-  hosts: all
+  hosts: jsc
   gather_facts: no
   connection: ansible.netcommon.network_cli
   vars:
@@ -15,7 +15,7 @@
 
     - name: Ensure local backup directory exists
       ansible.builtin.file:
-        path: ./backups
+        path: /var/lib/awx/projects/output/cisco/
         state: directory
       delegate_to: localhost
 
@@ -39,7 +39,7 @@
         - name: Save IOS config to file
           ansible.builtin.copy:
             content: "{{ ios_config.stdout[1] }}"
-            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_ios.cfg"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_ios.cfg"
           delegate_to: localhost
 
         - name: Gather IOS extra info (show version + inventory)
@@ -57,7 +57,7 @@
 
               ===== SHOW INVENTORY =====
               {{ ios_info.stdout[1] }}
-            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_ios_info.txt"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_ios_info.txt"
           delegate_to: localhost
 
     ##############################################################################
@@ -75,7 +75,7 @@
         - name: Save IOS XR config
           ansible.builtin.copy:
             content: "{{ xr_config.stdout[0] }}"
-            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_iosxr.cfg"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_iosxr.cfg"
           delegate_to: localhost
 
         - name: Gather IOS XR extra info
@@ -93,7 +93,7 @@
 
               ===== SHOW INVENTORY =====
               {{ xr_info.stdout[1] }}
-            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_iosxr_info.txt"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_iosxr_info.txt"
           delegate_to: localhost
 
     ##############################################################################
@@ -112,7 +112,7 @@
         - name: Save NX-OS config
           ansible.builtin.copy:
             content: "{{ nxos_config.stdout[1] }}"
-            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_nxos.cfg"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_nxos.cfg"
           delegate_to: localhost
 
         - name: Gather NX-OS extra info
@@ -130,5 +130,5 @@
 
               ===== SHOW INVENTORY =====
               {{ nxos_info.stdout[1] }}
-            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_nxos_info.txt"
+            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_nxos_info.txt"
           delegate_to: localhost
