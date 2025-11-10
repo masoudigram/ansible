@@ -1,19 +1,22 @@
 - hosts: jsc
   gather_facts: no
+  collections:
+    - community.general
   tasks:
-    - name: Run Backup (with sshpass + expect)
+    - name: Backup Cisco config using Expect
       block:
         - name: Gather running-config
           community.general.expect:
             command: >
-              sshpass -p '{{ ansible_ssh_pass }}'
               ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }}
               {{ ansible_user }}@{{ inventory_hostname }}
             responses:
-              'Password:': '{{ ansible_ssh_pass }}'
-              '[>#]': 'enable\n'
-              'Password:': '{{ ssh_enable_pass }}'
-              '[#]': 'terminal length 0\nshow running-config\nexit\n'
+              '(?i)password:': "{{ ansible_ssh_pass }}"
+              '.*[>#]': "enable\n"
+              '(?i)password:': "{{ ssh_enable_pass }}"
+              '.*#': "terminal length 0\nshow running-config\nexit\n"
+            echo: yes
+            timeout: 30
           register: export
           delegate_to: localhost
 
