@@ -4,7 +4,7 @@
     - name: Run Backup (with sshpass + expect)
       block:
         - name: Gather running-config
-          ansible.builtin.expect:
+          community.general.expect:
             command: >
               sshpass -p '{{ ansible_ssh_pass }}'
               ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }}
