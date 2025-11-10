@@ -1,14 +1,21 @@
 ---
-- name: Universal Cisco Backup Playbook (IOS / IOS XE / IOS XR / NX-OS)
-  hosts: jsc
+- name: Universal Cisco Backup Playbook
+  hosts: all
   gather_facts: no
   connection: ansible.netcommon.network_cli
-
+  vars:
+    # These should be set per host in AWX inventory
+    # ansible_network_os: cisco.ios.ios / cisco.iosxr.iosxr / cisco.nxos.nxos
+    # ansible_user: cisco
+    # ansible_password: mysshpassword
+    # ansible_become: yes
+    # ansible_become_method: enable
+    # ansible_become_password: myenablepassword
   tasks:
 
-    - name: Ensure backup directory exists
+    - name: Ensure local backup directory exists
       ansible.builtin.file:
-        path: /var/lib/awx/projects/output/cisco/
+        path: ./backups
         state: directory
       delegate_to: localhost
 
@@ -16,59 +23,112 @@
       debug:
         msg: "Backing up {{ inventory_hostname }} (OS: {{ ansible_network_os }})"
 
-    # ========== IOS / IOS XE ==========
- - name: Backup IOS / IOS XE
-  hosts: ios_devices
-  gather_facts: no
-  connection: ansible.netcommon.network_cli
-  vars:
-    ansible_network_os: cisco.ios.ios
-    ansible_user: "{{ ansible_user }}"
-    ansible_password: "{{ ansible_ssh_pass }}"
-    ansible_become: yes
-    ansible_become_method: enable
-    ansible_become_password: "{{ ssh_enable_pass }}"
+    ##############################################################################
+    # IOS / IOS XE
+    ##############################################################################
+    - name: Backup IOS / IOS XE configuration
+      when: ansible_network_os == "cisco.ios.ios"
+      block:
+        - name: Gather running-config (privileged exec)
+          cisco.ios.ios_command:
+            commands:
+              - terminal length 0
+              - show running-config
+          register: ios_config
 
-    tasks:
-      - name: Gather running-config
-        cisco.ios.ios_command:
-          commands:
-            - terminal length 0
-            - show running-config
-        register: running_config
-
-        - name: Save IOS config
+        - name: Save IOS config to file
           ansible.builtin.copy:
-            content: "{{ ios_out.stdout[0] }}"
-            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_ios.cfg"
+            content: "{{ ios_config.stdout[1] }}"
+            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_ios.cfg"
           delegate_to: localhost
 
-    # ========== IOS XR ==========
-    - name: Backup IOS XR config
+        - name: Gather IOS extra info (show version + inventory)
+          cisco.ios.ios_command:
+            commands:
+              - show version
+              - show inventory
+          register: ios_info
+
+        - name: Save IOS extra info
+          ansible.builtin.copy:
+            content: |
+              ===== SHOW VERSION =====
+              {{ ios_info.stdout[0] }}
+
+              ===== SHOW INVENTORY =====
+              {{ ios_info.stdout[1] }}
+            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_ios_info.txt"
+          delegate_to: localhost
+
+    ##############################################################################
+    # IOS XR
+    ##############################################################################
+    - name: Backup IOS XR configuration
       when: ansible_network_os == "cisco.iosxr.iosxr"
       block:
         - name: Gather running-config
           cisco.iosxr.iosxr_command:
-            commands: show running-config
-          register: xr_out
+            commands:
+              - show running-config
+          register: xr_config
 
         - name: Save IOS XR config
           ansible.builtin.copy:
-            content: "{{ xr_out.stdout[0] }}"
-            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_iosxr.cfg"
+            content: "{{ xr_config.stdout[0] }}"
+            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_iosxr.cfg"
           delegate_to: localhost
 
-    # ========== NX-OS ==========
-    - name: Backup NX-OS config
+        - name: Gather IOS XR extra info
+          cisco.iosxr.iosxr_command:
+            commands:
+              - show version
+              - show inventory
+          register: xr_info
+
+        - name: Save IOS XR extra info
+          ansible.builtin.copy:
+            content: |
+              ===== SHOW VERSION =====
+              {{ xr_info.stdout[0] }}
+
+              ===== SHOW INVENTORY =====
+              {{ xr_info.stdout[1] }}
+            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_iosxr_info.txt"
+          delegate_to: localhost
+
+    ##############################################################################
+    # NX-OS
+    ##############################################################################
+    - name: Backup NX-OS configuration
       when: ansible_network_os == "cisco.nxos.nxos"
       block:
         - name: Gather running-config
           cisco.nxos.nxos_command:
-            commands: show running-config
-          register: nx_out
+            commands:
+              - terminal length 0
+              - show running-config
+          register: nxos_config
 
         - name: Save NX-OS config
           ansible.builtin.copy:
-            content: "{{ nx_out.stdout[0] }}"
-            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_nxos.cfg"
+            content: "{{ nxos_config.stdout[1] }}"
+            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_nxos.cfg"
+          delegate_to: localhost
+
+        - name: Gather NX-OS extra info
+          cisco.nxos.nxos_command:
+            commands:
+              - show version
+              - show inventory
+          register: nxos_info
+
+        - name: Save NX-OS extra info
+          ansible.builtin.copy:
+            content: |
+              ===== SHOW VERSION =====
+              {{ nxos_info.stdout[0] }}
+
+              ===== SHOW INVENTORY =====
+              {{ nxos_info.stdout[1] }}
+            dest: "./backups/{{ inventory_hostname }}_{{ ansible_date_time.iso8601_basic_short }}_nxos_info.txt"
           delegate_to: localhost
