@@ -20,10 +20,25 @@
     - name: Backup IOS / IOS XE config
       when: ansible_network_os == "cisco.ios.ios"
       block:
-        - name: Gather running-config
-          cisco.ios.ios_command:
-            commands: show running-config
-          register: ios_out
+        - name: Backup IOS / IOS XE
+          hosts: ios_devices
+          gather_facts: no
+          connection: ansible.netcommon.network_cli
+          vars:
+            ansible_network_os: cisco.ios.ios
+            ansible_user: "{{ ansible_user }}"
+            ansible_password: "{{ ansible_ssh_pass }}"
+            ansible_become: yes
+            ansible_become_method: enable
+            ansible_become_password: "{{ ssh_enable_pass }}"
+
+  tasks:
+    - name: Gather running-config
+      cisco.ios.ios_command:
+        commands:
+          - terminal length 0
+          - show running-config
+      register: running_config
 
         - name: Save IOS config
           ansible.builtin.copy:
