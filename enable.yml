@@ -1,27 +1,19 @@
-- hosts: jsc
+---
+- name: Cisco IOS Backup Playbook
+  hosts: jsc
   gather_facts: no
-  collections:
-    - community.general
-  tasks:
-    - name: Backup Cisco config using Expect
-      block:
-        - name: Gather running-config
-          community.general.expect:
-            command: >
-              ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }}
-              {{ ansible_user }}@{{ inventory_hostname }}
-            responses:
-              '(?i)password:': "{{ ansible_ssh_pass }}"
-              '.*[>#]': "enable\n"
-              '(?i)password:': "{{ ssh_enable_pass }}"
-              '.*#': "terminal length 0\nshow running-config\nexit\n"
-            echo: yes
-            timeout: 30
-          register: export
-          delegate_to: localhost
+  connection: ansible.netcommon.network_cli
+  vars:
+    ansible_network_os: cisco.ios.ios
 
-        - name: store export to local file
-          ansible.builtin.copy:
-            content: "{{ export.stdout }}"
-            dest: "/var/lib/awx/projects/output/cisco/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.config"
-          delegate_to: localhost
+  tasks:
+    - name: Backup running configuration
+      cisco.ios.ios_config:
+        backup: yes
+        backup_options:
+          dir_path: "/var/lib/awx/projects/output/cisco/"
+      register: backup_output
+
+    - name: Show backup result
+      debug:
+        msg: "Backup saved: {{ backup_output.backup_path }}"
