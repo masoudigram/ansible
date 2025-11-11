@@ -11,7 +11,7 @@
       cisco.ios.ios_config:
         backup: yes
         backup_options:
-          dir_path: "/var/lib/awx/projects/output/jsc/"
+          dir_path: "/var/lib/awx/projects/output/cisco/"
       register: backup_output
 
     - name: Show backup result
