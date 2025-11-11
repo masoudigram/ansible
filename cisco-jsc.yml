@@ -1,19 +1,17 @@
----
-- name: Cisco backup via raw SSH (works with restricted AAA)
-  hosts: jsc
+- hosts: cisco
   gather_facts: no
-  connection: ssh
-  vars:
-    backup_dir: "/var/lib/awx/projects/output/jsc"
-
   tasks:
-    - name: Collect running configuration
-      shell: >
-        ssh -o StrictHostKeyChecking=no {{ ansible_user }}@{{ ansible_host }}
-        "show running-config"
-      register: raw_output
+    - name: Run BackUp
+      block:
+        - name: gather export
+          no_log: false
+          ansible.builtin.shell: >- 
+            sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=no -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} 'enable ; show run'
+          register: export
+          delegate_to: localhost
 
-    - name: Save backup locally
-      copy:
-        content: "{{ raw_output.stdout }}"
-        dest: "{{ backup_dir }}/{{ inventory_hostname }}.cfg"
+        - name: store export to local file
+          ansible.builtin.copy:
+            content: "{{ export.stdout }}"
+            dest: "/var/lib/awx/projects/output/jsc/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.config"
+          delegate_to: localhost
