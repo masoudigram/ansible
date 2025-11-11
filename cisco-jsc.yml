@@ -1,4 +1,4 @@
-- hosts: cisco
+- hosts: jsc
   gather_facts: no
   tasks:
     - name: Run BackUp
