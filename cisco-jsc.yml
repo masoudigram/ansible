@@ -1,19 +1,23 @@
 ---
-- name: Cisco IOS Backup Playbook
+- name: Cisco Backup (Restricted AAA)
   hosts: jsc
   gather_facts: no
-  connection: ansible.netcommon.network_cli
+  connection: network_cli
   vars:
-    ansible_network_os: cisco.ios.ios
+    ansible_network_os: ios
+    ansible_become: yes
+    ansible_become_method: enable
+    ansible_become_password: ""
+    backup_dir: "/var/lib/awx/projects/output/jsc"
 
   tasks:
-    - name: Backup running configuration
-      cisco.ios.ios_config:
-        backup: yes
-        backup_options:
-          dir_path: "/var/lib/awx/projects/output/jsc/"
-      register: backup_output
+    - name: Run "show running-config" manually
+      ios_command:
+        commands:
+          - show running-config
+      register: show_run_output
 
-    - name: Show backup result
-      debug:
-        msg: "Backup saved: {{ backup_output.backup_path }}"
+    - name: Save running config locally
+      copy:
+        content: "{{ show_run_output.stdout[0] }}"
+        dest: "{{ backup_dir }}/{{ inventory_hostname }}.cfg"
