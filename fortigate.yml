@@ -1,0 +1,25 @@
+- hosts: fortigate
+  connection: httpapi
+  collections:
+    - fortinet.fortios
+  vars:
+    vdom: "root"
+    ansible_httpapi_use_ssl: yes
+    ansible_httpapi_validate_certs: no
+    ansible_httpapi_port: 34413
+  tasks:
+  - name: backup a_specific_vdom settings
+    fortios_system_config_backup_restore:
+     config: "system config backup"
+     vdom: "{{ vdom }}"
+     backup: "yes"
+     scope: "vdom"
+     filename: "/var/lib/awx/projects/output/fortigate/fortigate"
+
+  - name: backup global settings
+    fortios_system_config_backup_restore:
+     config: "system config backup"
+     vdom: "{{ vdom }}"
+     backup: "yes"
+     scope: "global"
+     filename: "/var/lib/awx/projects/output/fortigate/fortigate"
