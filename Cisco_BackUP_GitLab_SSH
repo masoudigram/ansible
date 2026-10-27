@@ -1,0 +1,166 @@
+---
+- name: Collect Cisco running configurations
+  hosts: cisco
+  gather_facts: false
+
+  tasks:
+    - name: Collect running configuration
+      ansible.builtin.shell: >-
+        sshpass -p '{{ ansible_ssh_pass }}' ssh -o StrictHostKeyChecking=yes -p {{ ansible_ssh_port }} {{ ansible_user }}@{{ inventory_hostname }} 'show running-config'
+      args:
+        executable: /bin/bash
+      register: export
+      delegate_to: localhost
+      changed_when: false
+      no_log: true
+
+    - name: Validate collected configuration
+      ansible.builtin.assert:
+        that:
+          - export.rc == 0
+          - export.stdout | length > 0
+        fail_msg: "Failed to collect configuration from {{ inventory_hostname }}"
+    - name: Store original export to local timestamped file
+      ansible.builtin.copy:
+        content: "{{ export.stdout }}"
+        dest: >-
+          /var/lib/awx/projects/output/cisco/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.config
+        mode: "0600"
+      delegate_to: localhost
+      no_log: true
+
+    - name: Store normalized configuration locally
+      ansible.builtin.copy:
+        content: >-
+          {{
+            export.stdout
+            | regex_replace('(?m)^Building configuration\.\.\.\r?\n', '')
+            | regex_replace('(?m)^Current configuration\s*:\s*\d+\s+bytes\r?\n', '')
+            | regex_replace('(?m)^!\s*Last configuration change at .*\r?\n?', '')
+            | regex_replace('(?m)^!\s*NVRAM config last updated at .*\r?\n?', '')
+            | regex_replace('(?m)^!Command:\s*show running-config\s*\r?\n?', '')
+            | regex_replace('(?m)^!Running configuration last done at:.*\r?\n?', '')
+            | regex_replace('(?m)^!Time:.*\r?\n?', '')
+            | trim
+          }}{{ '\n' }}
+        dest: "/tmp/cisco-backup-{{ awx_job_id | default('manual') }}-{{ inventory_hostname }}.config"
+        mode: "0600"
+      delegate_to: localhost
+      no_log: true
+
+
+- name: Commit Cisco configuration backups to GitLab
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    git_repo_url: "git@gitlab.example.local:ip-team/awx-ansible.git"
+    git_branch: "main"
+    git_repo_dir: "/tmp/awx-cisco-git-{{ awx_job_id | default('manual') }}"
+    backup_dir: "backups/cisco"
+
+  tasks:
+    - name: Verify Git repository URL is configured
+      ansible.builtin.assert:
+        that:
+          - git_repo_url | length > 0
+          - git_repo_url.startswith('git@')
+        fail_msg: "GitLab repository URL is missing or invalid."
+
+    - name: Clone the GitLab repository
+      ansible.builtin.git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ git_repo_dir }}"
+        version: "{{ git_branch }}"
+        update: true
+
+    - name: Create Cisco backup directory
+      ansible.builtin.file:
+        path: "{{ git_repo_dir }}/{{ backup_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Update configuration files in the Git working tree
+      ansible.builtin.copy:
+        src: "/tmp/cisco-backup-{{ awx_job_id | default('manual') }}-{{ item }}.config"
+        dest: "{{ git_repo_dir }}/{{ backup_dir }}/{{ item }}.config"
+        mode: "0644"
+      loop: "{{ groups['cisco'] }}"
+      when:
+        - hostvars[item].export is defined
+        - hostvars[item].export.rc == 0
+      register: backup_updates
+
+    - name: Configure Git commit identity
+      ansible.builtin.command:
+        argv:
+          - git
+          - config
+          - "{{ item.key }}"
+          - "{{ item.value }}"
+        chdir: "{{ git_repo_dir }}"
+      loop:
+        - key: user.name
+          value: "AWX Cisco Backup"
+        - key: user.email
+          value: "awx-cisco-backup@example.local"
+      changed_when: false
+
+    - name: Stage Cisco configuration backups
+      ansible.builtin.command:
+        argv:
+          - git
+          - add
+          - --all
+          - --
+          - "{{ backup_dir }}/"
+        chdir: "{{ git_repo_dir }}"
+      changed_when: false
+
+    - name: Check for configuration changes
+      ansible.builtin.command:
+        argv:
+          - git
+          - diff
+          - --cached
+          - --quiet
+        chdir: "{{ git_repo_dir }}"
+      register: staged_changes
+      changed_when: staged_changes.rc == 1
+      failed_when: staged_changes.rc not in [0, 1]
+
+    - name: Commit configuration changes
+      ansible.builtin.command:
+        argv:
+          - git
+          - commit
+          - -m
+          - "Update Cisco configuration backups"
+        chdir: "{{ git_repo_dir }}"
+      when: staged_changes.rc == 1
+      register: git_commit
+
+    - name: Push changes to GitLab main branch
+      ansible.builtin.command:
+        argv:
+          - git
+          - push
+          - origin
+          - "HEAD:{{ git_branch }}"
+        chdir: "{{ git_repo_dir }}"
+      when: staged_changes.rc == 1
+
+    - name: Report unchanged configurations
+      ansible.builtin.debug:
+        msg: "No Cisco configuration changes detected; no commit was created."
+      when: staged_changes.rc == 0
+
+    - name: Remove temporary configuration files
+      ansible.builtin.file:
+        path: "/tmp/cisco-backup-{{ awx_job_id | default('manual') }}-{{ item }}.config"
+        state: absent
+      loop: "{{ groups['cisco'] }}"
+      when:
+        - hostvars[item].export is defined
+        - hostvars[item].export.rc == 0
